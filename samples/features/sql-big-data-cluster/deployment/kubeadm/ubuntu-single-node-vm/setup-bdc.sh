@@ -44,9 +44,9 @@ RETRY_INTERVAL=5
 
 # Variables for pulling dockers.
 #
-export DOCKER_REGISTRY="mcr.microsoft.com"
-export DOCKER_REPOSITORY="mssql/bdc"
-export DOCKER_TAG="2019-RC1-ubuntu"
+export DOCKER_REGISTRY="${DOCKER_REGISTRY:-mcr.microsoft.com}"
+export DOCKER_REPOSITORY="${DOCKER_REPOSITORY:-mssql/bdc}"
+export DOCKER_TAG="${DOCKER_TAG:-2019-RC1-ubuntu}"
 
 # Variables used for azdata cluster creation.
 #
@@ -238,10 +238,12 @@ echo "Starting to setup Kubernetes master..."
 sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --kubernetes-version=$KUBE_VERSION
 
 mkdir -p $HOME/.kube
-mkdir -p /home/$SUDO_USER/.kube
-
 sudo cp -f /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u $SUDO_USER):$(id -g $SUDO_USER) $HOME/.kube/config
+
+if [[ ! -z ${SUDO_USER+x} ]]; then
+    mkdir -p /home/$SUDO_USER/.kube
+    sudo chown $(id -u $SUDO_USER):$(id -g $SUDO_USER) $HOME/.kube/config
+fi
 
 # To enable a single node cluster remove the taint that limits the first node to master only service.
 #
@@ -332,7 +334,7 @@ kubectl config set-context --current --namespace $CLUSTER_NAME
 azdata login -n $CLUSTER_NAME
 azdata bdc endpoint list --output table
 
-if [ -d "$HOME/.azdata/" ]; then
+if [[ ! -z ${SUDO_USER+x} && -d "$HOME/.azdata/" ]]; then
         sudo chown -R $(id -u $SUDO_USER):$(id -g $SUDO_USER) $HOME/.azdata/
 fi
 
